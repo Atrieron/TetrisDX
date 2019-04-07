@@ -9,6 +9,7 @@
 #include <xnamath.h>
 #include "GameObjects\GameField.h"
 #include "GameObjects\Figure.h"
+#include <time.h>
 
 #define MAX_LOADSTRING 100
 
@@ -23,6 +24,7 @@ ID3D11PixelShader*      pPixelShader = NULL;
 ID3D11InputLayout*      pVertexLayout = NULL;
 ID3D11Buffer*			pConstantBuffer = NULL;
 ID3D11Buffer*			pVariableBuffer = NULL;
+ID3D11Texture2D*        pTexture2D = NULL;
 XMMATRIX                g_World;
 XMMATRIX                g_View;
 XMMATRIX                g_Projection;
@@ -31,8 +33,12 @@ GameField*				pGameField = NULL;
 Figure*					pFigure = NULL;
 
 bool* field = NULL;
+bool rendering;
+bool downPressed;
 DWORD lastTick;
+DWORD lastDrop;
 DWORD moveRate;
+DWORD fastMoveRate;
 
 // Global Variables:
 HINSTANCE hInst;                                // current instance
@@ -65,8 +71,18 @@ struct VariableBuffer
 void Update()
 {
 	DWORD currentTick = GetTickCount();
-	if (currentTick - lastTick > moveRate)
+	int updateCount;
+
+	if (downPressed)
 	{
+		updateCount = (currentTick - lastDrop) / fastMoveRate;
+	}
+	else
+	{
+		updateCount = (currentTick - lastDrop) / moveRate;
+	}
+
+	for (int i = 0; i < updateCount; ++i) {
 		pFigure->move(0, 1);
 		HitCheckResult hitCheckResult = pFigure->CheckHit(pGameField);
 		if (hitCheckResult.downHit)
@@ -75,20 +91,27 @@ void Update()
 			pFigure->Paste(pGameField, true);
 			pFigure->Reset();
 
+			pGameField->ClearRows();
+
 			hitCheckResult = pFigure->CheckHit(pGameField);
 			if (hitCheckResult.downHit)
 			{
-				//game lost
+				pGameField->ClearField();
 			}
 		}
-
-		lastTick = currentTick;
 	}
+
+	if (updateCount > 0)
+	{
+		lastDrop = currentTick;
+	}
+	lastTick = currentTick;
 }
 
 void Render()
 {
-	pFigure->Paste(pGameField, true);
+	rendering = true;
+	//pFigure->Paste(pGameField, true);
 
 	float ClearColor[4] = { 0.0f, 0.125f, 0.3f, 1.0f };
 	pImmediateContext->ClearRenderTargetView(pRenderTargetView, ClearColor);
@@ -105,9 +128,11 @@ void Render()
 	pImmediateContext->PSSetShader(pPixelShader, NULL, 0);
 		
 	pGameField->Draw(pImmediateContext, pVariableBuffer);
-	pFigure->Paste(pGameField, false);
+	pFigure->Draw(pImmediateContext, pVariableBuffer);
+	//pFigure->Paste(pGameField, false);
 
 	pSwapChain->Present(0, 0);
+	rendering = false;
 }
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
@@ -384,10 +409,29 @@ bool InitDX(HWND hWnd)
 	pImmediateContext->UpdateSubresource(pConstantBuffer, 0, NULL, &cb, 0, 0);
 
 	pGameField = new GameField(10, 20);
-	pFigure = new Figure();
+	pFigure = new Figure(0.4f, 0.4f);
+
+	D3D11_TEXTURE2D_DESC texDesc;
+	texDesc.ArraySize = 1;
+	texDesc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
+	texDesc.CPUAccessFlags = 0;
+	texDesc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
+	texDesc.Height = 512;
+	texDesc.Width = 512;
+	texDesc.MipLevels = 1;
+	texDesc.MiscFlags = 0;
+	texDesc.SampleDesc.Count = 1;
+	texDesc.SampleDesc.Quality = 0;
+	texDesc.Usage = D3D11_USAGE_DEFAULT;
+
+	hr = pd3dDevice->CreateTexture2D(&texDesc, NULL, &pTexture2D);
 
 	moveRate = 1000;
+	fastMoveRate = 200;
 	lastTick = GetTickCount();
+	lastDrop = lastTick;
+
+	srand(time(NULL));
 
 	return true;
 }
@@ -466,30 +510,80 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		{
 		case VK_UP:
 		{
-			pFigure->Rotate();
-			//check hit
+			if (!rendering)
+			{
+				pFigure->Rotate(false);
+				HitCheckResult hitCheckResult = pFigure->CheckHit(pGameField);
+				while (hitCheckResult.downHit)
+				{
+					pFigure->move(0, -1);
+
+					if (hitCheckResult.leftHit)
+						pFigure->move(1, 0);
+
+					if (hitCheckResult.rightHit)
+						pFigure->move(-1, 0);
+
+					hitCheckResult = pFigure->CheckHit(pGameField);
+				}
+
+				while (hitCheckResult.leftHit)
+				{
+					pFigure->move(1, 0);
+					hitCheckResult = pFigure->CheckHit(pGameField);
+				}
+
+				while (hitCheckResult.rightHit)
+				{
+					pFigure->move(-1, 0);
+					hitCheckResult = pFigure->CheckHit(pGameField);
+				}
+			}
 			break;
 		}
 		case VK_LEFT:
 		{
-			pFigure->move(-1, 0);
-			HitCheckResult hitCheckResult = pFigure->CheckHit(pGameField);
-			if (hitCheckResult.leftHit)
+			if (!rendering)
 			{
-				pFigure->move(1, 0);
+				pFigure->move(-1, 0);
+				HitCheckResult hitCheckResult = pFigure->CheckHit(pGameField);
+				if (hitCheckResult.leftHit||hitCheckResult.downHit)
+				{
+					pFigure->move(1, 0);
+				}
 			}
 			break;
 		}
 		case VK_RIGHT:
 		{
-			pFigure->move(1, 0);
-			HitCheckResult hitCheckResult = pFigure->CheckHit(pGameField);
-			if (hitCheckResult.rightHit)
+			if (!rendering)
 			{
-				pFigure->move(-1, 0);
+				pFigure->move(1, 0);
+				HitCheckResult hitCheckResult = pFigure->CheckHit(pGameField);
+				if (hitCheckResult.rightHit || hitCheckResult.downHit)
+				{
+					pFigure->move(-1, 0);
+				}
 			}
 			break;
 		}
+		case VK_DOWN:
+		{
+			downPressed = true;
+			break;
+		}
+		}
+		break;
+	}
+	case WM_KEYUP:
+	{
+		switch (wParam)
+		{
+			case VK_DOWN:
+			{
+				downPressed = false;
+				break;
+			}
 		}
 		break;
 	}

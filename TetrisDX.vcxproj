@@ -161,7 +161,6 @@
     <Text Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="GameObjects\BaseModel.h" />
     <ClInclude Include="GameObjects\Figure.h" />
     <ClInclude Include="GameObjects\GameField.h" />
     <ClInclude Include="Resource.h" />
@@ -170,7 +169,6 @@
     <ClInclude Include="TetrisDX.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="GameObjects\BaseModel.cpp" />
     <ClCompile Include="GameObjects\Figure.cpp" />
     <ClCompile Include="GameObjects\GameField.cpp" />
     <ClCompile Include="stdafx.cpp">
