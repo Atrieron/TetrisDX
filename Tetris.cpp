@@ -2,7 +2,7 @@
 
 void Tetris::Init()
 {
-	pGameField = new GameField(10, 20);
+	pGameField = new GameField(10, 20, 0.4f, 0.4f);
 	pFigure = new Figure(0.4f, 0.4f);
 
 	moveRate = 1000;
@@ -38,10 +38,10 @@ void Tetris::Update(DWORD tick)
 	lastDrop -= updateCount*curMoveRate;
 }
 
-void Tetris::Draw(ID3D11DeviceContext* pImmediateContext, ID3D11Buffer*	pVariableBuffer)
+void Tetris::Draw(DrawingSystem * drawingSystem)
 {
-	pGameField->Draw(pImmediateContext, pVariableBuffer);
-	pFigure->Draw(pImmediateContext, pVariableBuffer);
+	pGameField->Draw(drawingSystem);
+	pFigure->Draw(drawingSystem);
 }
 
 void Tetris::UpButton()

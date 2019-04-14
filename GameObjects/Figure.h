@@ -1,5 +1,7 @@
 #pragma once
 #include "GameField.h"
+#include "../DrawingSystem.h"
+#include "../stdafx.h"
 
 struct HitCheckResult
 {
@@ -11,7 +13,6 @@ struct HitCheckResult
 class Figure
 {
 private:
-	static XMFLOAT4 vBackColor, vFilledColor;
 	static int topX, topY;
 
 	int x, y;
@@ -30,5 +31,5 @@ public:
 	void move(int dx, int dy);
 	HitCheckResult CheckHit(GameField* gameField);
 	void Paste(GameField* gameField, bool value);
-	void Draw(ID3D11DeviceContext* pImmediateContext, ID3D11Buffer* pVariableBuffer);
+	void Draw(DrawingSystem* drawingSystem);
 };

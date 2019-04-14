@@ -1,6 +1,7 @@
 #pragma once
 #include "GameObjects\Figure.h"
 #include "GameObjects\GameField.h"
+#include "DrawingSystem.h"
 
 class Tetris
 {
@@ -15,7 +16,7 @@ private:
 public:
 	void Init();
 	void Update(DWORD tick);
-	void Draw(ID3D11DeviceContext* pImmediateContext, ID3D11Buffer*	pVariableBuffer);
+	void Draw(DrawingSystem* drawingSystem);
 	void UpButton();
 	void LeftButton();
 	void RigtButton();

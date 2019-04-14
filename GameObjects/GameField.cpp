@@ -1,11 +1,5 @@
 #include "GameField.h"
 
-struct VariableBuffer
-{
-	XMMATRIX mWorld;
-	XMFLOAT4 vMeshColor;
-};
-
 int _squareCoordsToFlat(int x, int y, int width)
 {
 	return width*y + x;
@@ -18,10 +12,13 @@ void GameField::ClearField()
 			field[_squareCoordsToFlat(x, y, width)] = false;
 }
 
-GameField::GameField(int width, int height)
+GameField::GameField(int width, int height, float squareWidth, float squareHeight)
 {
 	this->width = width;
 	this->height = height;
+
+	this->squareWidth = squareWidth;
+	this->squareHeight = squareHeight;
 
 	field = new bool[width*height];
 
@@ -90,44 +87,18 @@ int GameField::getHeight()
 	return height;
 }
 
-void GameField::Draw(ID3D11DeviceContext* pImmediateContext, ID3D11Buffer* pVariableBuffer)
+void GameField::Draw(DrawingSystem * drawingSystem)
 {
-	for(int x = 0; x < width; ++x)
+	for (int x = 0; x < width; ++x)
 		for (int y = 0; y < height; ++y)
 		{
-			XMMATRIX World = XMMatrixTranslation(topX + 0.4f*x, topY - 0.4f*y, 0.0f);
-
-			VariableBuffer vb;
-			vb.mWorld = XMMatrixTranspose(World);
-			vb.vMeshColor = vBackColor;
-
-			pImmediateContext->UpdateSubresource(pVariableBuffer, 0, NULL, &vb, 0, 0);
-
-			pImmediateContext->VSSetConstantBuffers(1, 1, &pVariableBuffer);
-			pImmediateContext->PSSetConstantBuffers(1, 1, &pVariableBuffer);
-
-			pImmediateContext->DrawIndexed(6, 0, 0);
-			
-			World = XMMatrixScaling(0.9f, 0.9f, 1.0f);
-			World = World * XMMatrixTranslation(topX + 0.4f*x, topY - 0.4f*y, 0.0f);
-
-			vb.mWorld = XMMatrixTranspose(World);
-			if(field[_squareCoordsToFlat(x,y,width)])
-				vb.vMeshColor = vFilledColor;
+			drawingSystem->drawSquare(topX + squareWidth*x, topY - squareHeight*y, squareWidth, squareHeight, 0.8f, 0.8f, 0.8f);
+			if (field[_squareCoordsToFlat(x, y, width)])
+				drawingSystem->drawSquare(topX + squareWidth*x, topY - squareHeight*y, squareWidth * 0.9f, squareHeight * 0.9f, 0.0f, 0.8f, 0.0f);
 			else
-				vb.vMeshColor = vEmptyColor;
-			pImmediateContext->UpdateSubresource(pVariableBuffer, 0, NULL, &vb, 0, 0);
-
-			pImmediateContext->VSSetConstantBuffers(1, 1, &pVariableBuffer);
-			pImmediateContext->PSSetConstantBuffers(1, 1, &pVariableBuffer);
-
-			pImmediateContext->DrawIndexed(6, 0, 0);
+				drawingSystem->drawSquare(topX + squareWidth*x, topY - squareHeight*y, squareWidth * 0.9f, squareHeight * 0.9f, 0.0f, 0.0f, 0.0f);
 		}
 }
-
-XMFLOAT4 GameField::vBackColor = XMFLOAT4(0.8f, 0.8f, 0.8f, 1.0f);
-XMFLOAT4 GameField::vEmptyColor = XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f);
-XMFLOAT4 GameField::vFilledColor = XMFLOAT4(0.0f, 0.8f, 0.0f, 1.0f);
 
 int GameField::topX = -9.0f;
 int GameField::topY = 5.0f;

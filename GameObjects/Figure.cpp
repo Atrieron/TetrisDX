@@ -1,11 +1,5 @@
 #include "Figure.h"
 
-struct VariableBuffer
-{
-	XMMATRIX mWorld;
-	XMFLOAT4 vMeshColor;
-};
-
 int squareCoordsToFlat(int x, int y, int width)
 {
 	return width*y + x;
@@ -241,42 +235,17 @@ void Figure::Paste(GameField * gameField, bool value)
 		}
 }
 
-void Figure::Draw(ID3D11DeviceContext * pImmediateContext, ID3D11Buffer * pVariableBuffer)
+void Figure::Draw(DrawingSystem * drawingSystem)
 {
 	for (int lx = 0; lx < width; ++lx)
 		for (int ly = 0; ly < height; ++ly)
 		{
 			if (field[squareCoordsToFlat(lx, ly, width)]) {
-				XMMATRIX World = XMMatrixTranslation(topX + squareWidth*(x + lx), topY - squareHeight*(y + ly), 0.0f);
-
-				VariableBuffer vb;
-				vb.mWorld = XMMatrixTranspose(World);
-				vb.vMeshColor = vBackColor;
-
-				pImmediateContext->UpdateSubresource(pVariableBuffer, 0, NULL, &vb, 0, 0);
-
-				pImmediateContext->VSSetConstantBuffers(1, 1, &pVariableBuffer);
-				pImmediateContext->PSSetConstantBuffers(1, 1, &pVariableBuffer);
-
-				pImmediateContext->DrawIndexed(6, 0, 0);
-
-				World = XMMatrixScaling(0.9f, 0.9f, 1.0f);
-				World = World * XMMatrixTranslation(topX + squareWidth*(x + lx), topY - squareHeight*(y + ly), 0.0f);
-
-				vb.mWorld = XMMatrixTranspose(World);
-				vb.vMeshColor = vFilledColor;
-				pImmediateContext->UpdateSubresource(pVariableBuffer, 0, NULL, &vb, 0, 0);
-
-				pImmediateContext->VSSetConstantBuffers(1, 1, &pVariableBuffer);
-				pImmediateContext->PSSetConstantBuffers(1, 1, &pVariableBuffer);
-
-				pImmediateContext->DrawIndexed(6, 0, 0);
+				drawingSystem->drawSquare(topX + squareWidth*(x + lx), topY - squareHeight*(y + ly), squareWidth, squareHeight, 0.8f, 0.8f, 0.8f);
+				drawingSystem->drawSquare(topX + squareWidth*(x + lx), topY - squareHeight*(y + ly), squareWidth * 0.9f, squareHeight * 0.9f, 0.0f, 0.8f, 0.0f);
 			}
 		}
 }
-
-XMFLOAT4 Figure::vBackColor = XMFLOAT4(0.8f, 0.8f, 0.8f, 1.0f);
-XMFLOAT4 Figure::vFilledColor = XMFLOAT4(0.0f, 0.8f, 0.0f, 1.0f);
 
 int Figure::topX = -9.0f;
 int Figure::topY = 5.0f;

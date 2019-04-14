@@ -1,19 +1,18 @@
 #pragma once
-#include <d3d11.h>
-#include <xnamath.h>
+#include "../DrawingSystem.h"
 
 class GameField
 {
 private:
-	static XMFLOAT4 vBackColor, vEmptyColor, vFilledColor;
 	static int topX, topY;
 
-	bool* field;
+	float squareWidth, squareHeight;
+	bool* field;	
 	int width, height;
 public:
 	void ClearField();
-	void Draw(ID3D11DeviceContext* pImmediateContext, ID3D11Buffer* pVariableBuffer);
-	GameField(int width, int height);
+	void Draw(DrawingSystem* drawingSystem);
+	GameField(int width, int height, float squareWidth, float squareHeight);
 	~GameField();
 	void ClearRows();
 
